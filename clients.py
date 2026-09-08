@@ -39,6 +39,10 @@ def vector_movements():
     return _get(VECTOR_BASE_URL, "/v1/movements", VECTOR_TOKEN) or []
 
 
+def vector_abc_input():
+    return _get(VECTOR_BASE_URL, "/v1/oracle/abc-input", VECTOR_TOKEN)
+
+
 def mercury_health():
     return _get(MERCURY_BASE_URL, "/health")
 

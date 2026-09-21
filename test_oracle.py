@@ -106,3 +106,21 @@ def test_dashboard_exposes_vector_system_contract(monkeypatch):
     payload = response.json()
     assert payload["vector_system"]["system_id"] == "UNG-VECTOR"
     assert payload["vector_system"]["version"] == "0.28.0"
+
+
+def test_intelligence_endpoint_is_read_only_and_cross_system(monkeypatch):
+    monkeypatch.setattr(main.clients, "vector_health", lambda: True)
+    monkeypatch.setattr(main.clients, "vector_system", lambda: {"system_id":"UNG-VECTOR","domain":"warehouse-logistics","version":"0.28.0"})
+    monkeypatch.setattr(main.clients, "vector_summary", lambda: {"distinct_skus":5,"units_on_hand":100,"movements":20})
+    monkeypatch.setattr(main.clients, "vector_abc_input", lambda: {"inventory_records":1,"priced_records":1,"records_with_annual_usage":1,"items":[{"item_code":"A","description":"A","annual_usage_qty":10,"unit_price":10}]})
+    monkeypatch.setattr(main.clients, "mercury_health", lambda: True)
+    monkeypatch.setattr(main.clients, "mercury_ready", lambda: True)
+    monkeypatch.setattr(main.clients, "nova_health", lambda: True)
+    monkeypatch.setattr(main.clients, "nova_supply_chain_kpis", lambda: {"kpis":[]})
+
+    response=client.get("/v1/intelligence")
+    assert response.status_code==200
+    payload=response.json()
+    assert payload["read_only"] is True
+    assert "findings" in payload
+    assert "opportunities" in payload

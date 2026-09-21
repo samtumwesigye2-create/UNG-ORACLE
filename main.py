@@ -4,9 +4,10 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from abc_analysis import compute_abc
+from intelligence import build_intelligence_snapshot
 import clients
 
-VERSION="1.3.0"
+VERSION="1.4.0"
 app = FastAPI(title="UNG-ORACLE",version=VERSION,description="Read-only cross-system logistics and supply-chain intelligence")
 
 class ABCItem(BaseModel):
@@ -29,7 +30,7 @@ def ready():
 
 @app.get("/v1/system")
 def system():
-    return {"system_id":"UNG-ORACLE","domain":"cross-system-logistics-intelligence","mode":"read-only","version":VERSION,"capabilities":["abc-inventory-classification","vector-live-abc-feed","vector-observation","mercury-observation","annual-consumption-value-analysis","nova-21-kpi-scorecard","supply-chain-executive-intelligence","cross-system-readiness","vector-read-contract-verification"]}
+    return {"system_id":"UNG-ORACLE","domain":"cross-system-logistics-intelligence","mode":"read-only","version":VERSION,"capabilities":["abc-inventory-classification","vector-live-abc-feed","vector-observation","mercury-observation","annual-consumption-value-analysis","nova-21-kpi-scorecard","supply-chain-executive-intelligence","cross-system-readiness","vector-read-contract-verification","cross-system-intelligence-findings","executive-opportunity-signals"]}
 
 @app.post("/v1/abc/analyze")
 def analyze_abc(body: ABCRequest):
@@ -88,9 +89,22 @@ def upstreams():
         "checked_at":datetime.now(timezone.utc).isoformat(),
     }
 
+@app.get("/v1/intelligence")
+def intelligence():
+    upstream_state=upstreams()
+    vector_summary=clients.vector_summary()
+    abc=abc_from_vector()
+    scorecard=executive_scorecard()
+    return build_intelligence_snapshot(
+        vector_summary=vector_summary,
+        abc=abc,
+        scorecard=scorecard,
+        upstreams=upstream_state,
+    )
+
 @app.get("/v1/dashboard")
 def dashboard_data():
-    return {"generated_at":datetime.now(timezone.utc).isoformat(),"read_only":True,"vector_health":clients.vector_health(),"vector_system":clients.vector_system(),"mercury_health":clients.mercury_health(),"nova_health":clients.nova_health(),"mercury_ready":clients.mercury_ready(),"vector_summary":clients.vector_summary(),"abc":abc_from_vector(),"scorecard":executive_scorecard()}
+    return {"generated_at":datetime.now(timezone.utc).isoformat(),"read_only":True,"vector_health":clients.vector_health(),"vector_system":clients.vector_system(),"mercury_health":clients.mercury_health(),"nova_health":clients.nova_health(),"mercury_ready":clients.mercury_ready(),"vector_summary":clients.vector_summary(),"abc":abc_from_vector(),"scorecard":executive_scorecard(),"intelligence":intelligence()}
 
 @app.get("/",response_class=HTMLResponse)
 def dashboard():

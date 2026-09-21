@@ -66,3 +66,43 @@ def test_ready_degrades_with_fewer_than_two_upstreams(monkeypatch):
     response = client.get("/ready")
     assert response.status_code == 200
     assert response.json()["status"] == "degraded"
+
+
+def test_upstreams_verifies_vector_read_contract(monkeypatch):
+    monkeypatch.setattr(main.clients, "vector_health", lambda: {"status": "ok"})
+    monkeypatch.setattr(
+        main.clients,
+        "vector_system",
+        lambda: {
+            "system_id": "UNG-VECTOR",
+            "domain": "warehouse-logistics",
+            "version": "0.28.0",
+        },
+    )
+    monkeypatch.setattr(main.clients, "mercury_health", lambda: False)
+    monkeypatch.setattr(main.clients, "mercury_ready", lambda: False)
+    monkeypatch.setattr(main.clients, "nova_health", lambda: False)
+
+    response = client.get("/v1/upstreams")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["vector"]["connected"] is True
+    assert payload["vector"]["read_contract_ok"] is True
+    assert payload["vector"]["system"]["version"] == "0.28.0"
+
+
+def test_dashboard_exposes_vector_system_contract(monkeypatch):
+    monkeypatch.setattr(main.clients, "vector_health", lambda: True)
+    monkeypatch.setattr(main.clients, "vector_system", lambda: {"system_id": "UNG-VECTOR", "version": "0.28.0"})
+    monkeypatch.setattr(main.clients, "mercury_health", lambda: False)
+    monkeypatch.setattr(main.clients, "nova_health", lambda: False)
+    monkeypatch.setattr(main.clients, "mercury_ready", lambda: False)
+    monkeypatch.setattr(main.clients, "vector_summary", lambda: {"distinct_skus": 5})
+    monkeypatch.setattr(main.clients, "vector_abc_input", lambda: None)
+    monkeypatch.setattr(main.clients, "nova_supply_chain_kpis", lambda: None)
+
+    response = client.get("/v1/dashboard")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["vector_system"]["system_id"] == "UNG-VECTOR"
+    assert payload["vector_system"]["version"] == "0.28.0"

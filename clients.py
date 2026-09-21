@@ -14,7 +14,7 @@ TIMEOUT = float(os.getenv("UPSTREAM_TIMEOUT_SECONDS", "6"))
 
 
 def _get(base: str, path: str, token: str = "", extra_headers: dict[str,str] | None = None) -> Any:
-    headers = {"User-Agent": "UNG-ORACLE/1.2"}
+    headers = {"User-Agent": "UNG-ORACLE/1.3"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     if extra_headers:
@@ -29,6 +29,10 @@ def _get(base: str, path: str, token: str = "", extra_headers: dict[str,str] | N
 
 def vector_health():
     return _get(VECTOR_BASE_URL, "/health")
+
+
+def vector_system():
+    return _get(VECTOR_BASE_URL, "/v1/system", VECTOR_TOKEN)
 
 
 def vector_summary():
